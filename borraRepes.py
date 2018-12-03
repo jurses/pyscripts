@@ -14,30 +14,56 @@ from tkinter import filedialog
 from openpyxl import load_workbook
 from openpyxl.utils import *
 
+
+def openFile():
+    global fileName
+    fileName = filedialog.askopenfilename(initialdir = ".", title = "Select file", filetypes = (("Archivos Excel","*.xlsx"), ("Cualquier archivo","*.*")))
+
+def removeRowWhereCell(cell):
+
 def removeUntilNextChange():
+    print(fileName)
+    wb = load_workbook(filename=fileName, data_only=True)
     ws = wb[e1.get()]
     col = column_index_from_string(e2.get())
     row_init = int(e3.get())
     row_end = int(e4.get())
-    
+
     newValue = None
-    for cells in ws.iter_rows(min_col = col, min_row = row_init, max_row = row_end):
-        print(cells[0].value)
-        if newValue != cells[0].value:
-            print("El valor {} es distinto que {}".format(newValue, cells[0].value))
-            newValue = cells[0].value
-        else:
-            cells[0].value = None
-        
-    wb.save("prueba1.xlsx")
+    if not allRow:
+        for cellRows in ws.iter_rows(min_col = col, max_col = col, min_row = row_init, max_row = row_end):
+            #print(cellRows[i].value)
+            if not allRow.get():
+                if newValue != cellRows[0].value:
+                    #print("El valor {} es distinto que {}".format(newValue, cellRows[0].value))
+                    newValue = cellRows[0].value
+                else:
+                    cellRows[0].value = None
+    else:
+        for cellRows in ws.iter_rows(min_col = column_index_from_string(0), min_row = row_init, max_row = row_end):
+            for cell in cellRows:
+                cell.value = None
+
+    wb.save("{}_modBorraRepes.xlsx".format(fileName))
         
 root = Tk()
+root.title("Herramientas Excel")
+global allRow
+allRow = BooleanVar()
+fileName = None
+
+root.geometry("500x500")
+root.resizable(0, 0)
+
 Label(root, text="Hoja del libro").grid(row = 0)
 Label(root, text="Columna").grid(row = 1)
 Label(root, text="Fila de inicio").grid(row = 2)
 Label(root, text="Fila final").grid(row = 3)
-Button(root, text="Aceptar", command=removeUntilNextChange).grid(row = 4, column = 0, sticky=W, pady=4)
-Button(root, text="Salir", command=root.quit).grid(row = 4, column = 1, sticky=W, pady=4)
+#Label(root, text="Nombre del archivo: {}".format(fileName)).grid(row = 5)
+Button(root, text="Aceptar", command=removeUntilNextChange).grid(row = 4, column = 1, sticky=W, pady=4)
+Button(root, text="Salir", command=root.quit).grid(row = 4, column = 2, sticky=W, pady=4)
+Button(root, text = "Abrir archivo", command = openFile).grid(row = 4, column = 0, sticky = W, pady = 4)
+Checkbutton(root, text = "Aplicar eliminación a toda la fila", variable = allRow, onvalue = TRUE, offvalue = FALSE).grid(row = 3, column = 2, sticky = W, pady =4)
 
 e1 = Entry(root)
 e2 = Entry(root)
@@ -48,9 +74,5 @@ e1.grid(row = 0, column = 1)
 e2.grid(row = 1, column = 1)
 e3.grid(row = 2, column = 1)
 e4.grid(row = 3, column = 1)
-
-root.filename = filedialog.askopenfilename(initialdir = ".",title = "Select file",filetypes = (("Archivos Excel","*.xlsx"), ("Cualquier archivo","*.*")))
-wb = load_workbook(filename=root.filename)
-
 
 mainloop()
