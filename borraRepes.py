@@ -14,15 +14,16 @@ from tkinter import filedialog
 from openpyxl import load_workbook
 from openpyxl.utils import *
 
-
 def openFile():
     global fileName
     fileName = filedialog.askopenfilename(initialdir = ".", title = "Select file", filetypes = (("Archivos Excel","*.xlsx"), ("Cualquier archivo","*.*")))
 
-def removeRowWhereCell(cell):
+def removeWholeRow(cell, ws):
+    for cellRows in ws.iter_rows(min_col = column_index_from_string("A"), max_col = 70, min_row = cell.row, max_row = cell.row):
+        for x in cellRows:
+            x.value = None
 
 def removeUntilNextChange():
-    print(fileName)
     wb = load_workbook(filename=fileName, data_only=True)
     ws = wb[e1.get()]
     col = column_index_from_string(e2.get())
@@ -30,19 +31,14 @@ def removeUntilNextChange():
     row_end = int(e4.get())
 
     newValue = None
-    if not allRow:
-        for cellRows in ws.iter_rows(min_col = col, max_col = col, min_row = row_init, max_row = row_end):
-            #print(cellRows[i].value)
-            if not allRow.get():
-                if newValue != cellRows[0].value:
-                    #print("El valor {} es distinto que {}".format(newValue, cellRows[0].value))
-                    newValue = cellRows[0].value
-                else:
-                    cellRows[0].value = None
-    else:
-        for cellRows in ws.iter_rows(min_col = column_index_from_string(0), min_row = row_init, max_row = row_end):
-            for cell in cellRows:
-                cell.value = None
+    for cellRows in ws.iter_rows(min_col = col, max_col = col, min_row = row_init, max_row = row_end):
+        if newValue != cellRows[0].value:
+            newValue = cellRows[0].value
+        else:
+            if allRow.get():
+                removeWholeRow(cellRows[0], ws)
+
+            cellRows[0].value = None
 
     wb.save("{}_modBorraRepes.xlsx".format(fileName))
         
