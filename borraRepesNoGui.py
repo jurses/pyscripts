@@ -8,12 +8,10 @@ El aviso de copyright anterior y este aviso de permiso se incluirán en todas la
 
 EL SOFTWARE SE PROPORCIONA "COMO ESTÁ", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A GARANTÍAS DE COMERCIALIZACIÓN, IDONEIDAD PARA UN PROPÓSITO PARTICULAR E INCUMPLIMIENTO. EN NINGÚN CASO LOS AUTORES O PROPIETARIOS DE LOS DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGUNA RECLAMACIÓN, DAÑOS U OTRAS RESPONSABILIDADES, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O CUALQUIER OTRO MOTIVO, DERIVADAS DE, FUERA DE O EN CONEXIÓN CON EL SOFTWARE O SU USO U OTRO TIPO DE ACCIONES EN EL SOFTWARE. 
 '''
-from tkinter import *
-from tkinter import filedialog
+
 from openpyxl import load_workbook
 from openpyxl.utils import *
 import re
-import os
 
 global allRow
 
@@ -54,6 +52,7 @@ def getIndicesAffected(str_indices):
     return indicesSelected
 
 def removeWholeRows(row, matrixAffected):
+    print(matrixAffected)
     for cells in ws.iter_cols(
         min_col = matrixAffected[0],
         max_col = matrixAffected[2],
@@ -84,7 +83,7 @@ def removeNextsRepeated(vRefValue, cornerMatrix, refColumns):
             print("Nuevo valor {}".format(currentValue))
         else:
             print("A borrar, se repitió el {}".format(currentValue))
-            if allRow.get():
+            if allRow:
                 removeWholeRows(vRefValue[1][i], cornerMatrix)
             else:
                 for col in refColumns:
@@ -95,40 +94,16 @@ def removeUntilNextChange():
     global wb
     global ws
 
-    wb = load_workbook(fileName)
-    ws = wb[e1.get()]
-    indices = getIndicesAffected(e2.get())
-    refColumns = getRefCols(e3.get())
+    wb = load_workbook("prueba.xlsx")
+    ws = wb["Hoja 1"]
+    indices = getIndicesAffected("B4:H17")
+    refColumns = getRefCols("D")
     valuesRef = getValues(refColumns, indices[1], indices[3])
 
     removeNextsRepeated(valuesRef, indices, refColumns)
 
-    print("Guardando...")
-    wb.save("mod_{}".format(fileName))
-    print("Terminé :)")
+    wb.save("fin.xlsx")
 
-root = Tk()
-root.title("Herramientas Excel")
+allRow = True
 
-root.geometry("500x500")
-root.resizable(0, 0)
-
-allRow = BooleanVar()
-
-Label(root, text = "Hoja del libro").grid(row = 0)
-Label(root, text = "Seleccione la matriz\nEjemplo: D3:F5").grid(row = 1)
-Label(root, text = "Columnas referentes\nSeparadas por ','").grid(row = 2)
-Button(root, text = "Abrir archivo", command = openFile).grid(row = 3, column = 0, sticky = W, pady = 4)
-Button(root, text = "Aceptar", command = removeUntilNextChange).grid(row = 3, column = 1, sticky = W, pady = 4)
-Button(root, text = "Salir", command = root.quit).grid(row = 3, column = 2, sticky = W, pady = 4)
-Checkbutton(root, text = "Aplicar eliminación a toda la fila", variable = allRow, onvalue = TRUE, offvalue = FALSE).grid(row = 1, column = 2, sticky = W, pady = 4)
-
-e1 = Entry(root)
-e2 = Entry(root)
-e3 = Entry(root)
-
-e1.grid(row = 0, column = 1)
-e2.grid(row = 1, column = 1)
-e3.grid(row = 2, column = 1)
-
-mainloop()
+removeUntilNextChange()
