@@ -104,7 +104,7 @@ def removeUntilNextChange():
     removeNextsRepeated(valuesRef, indices, refColumns)
 
     print("Guardando...")
-    wb.save("mod_{}".format(fileName))
+    wb.save("mod.xlsx")
     print("Terminé :)")
 
 root = Tk()
