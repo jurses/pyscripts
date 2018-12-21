@@ -8,21 +8,31 @@ El aviso de copyright anterior y este aviso de permiso se incluirán en todas la
 
 EL SOFTWARE SE PROPORCIONA "COMO ESTÁ", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A GARANTÍAS DE COMERCIALIZACIÓN, IDONEIDAD PARA UN PROPÓSITO PARTICULAR E INCUMPLIMIENTO. EN NINGÚN CASO LOS AUTORES O PROPIETARIOS DE LOS DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGUNA RECLAMACIÓN, DAÑOS U OTRAS RESPONSABILIDADES, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O CUALQUIER OTRO MOTIVO, DERIVADAS DE, FUERA DE O EN CONEXIÓN CON EL SOFTWARE O SU USO U OTRO TIPO DE ACCIONES EN EL SOFTWARE. 
 '''
-
+#from tkinter import *
+#from tkinter import filedialog
 from openpyxl import load_workbook
 from openpyxl.utils import *
 import re
+import os
+
+# filename: string, the file name.
+# columns_string: string,   a string with the columns name in. Reference columns.
+# vCols: vector,    filled with columns' index. Reference columns.
+# str_indices: string,  range of matrix expressed this way: <col><row>:<col><row>
+# indicesSelected: vector, a vector of size 4 with the previous elements. [<index row>, <index column>, <index row>, <index column>]
+# vRefValue:  vector with 2 vectors in. The first vector contains the reference columns in a string from the first row to the last row 
+#    of the affected matrix  and the second vector contains the rows indices.
 
 global allRow
 
-def openFile():
+def selectFile():
     global fileName
-    fileName = filedialog.askopenfilename(initialdir = ".", title = "Select file", filetypes = (("Archivos Excel","*.xlsx"), ("Cualquier archivo","*.*")))
-    print(fileName)
 
-#   Obtiene las columnas de referencias pasadas por una cadena
-#   Para ser usadas con openpyxl
-def getRefCols(columns_string):
+    fileName = "21 VM i steps Marro1 per rols_Versión Theme con letras-REV.xlsx"
+    # fileName = filedialog.askopenfilename(initialdir = ".", title = "Select file", filetypes = (("Archivos Excel","*.xlsx"), ("Cualquier archivo", "*.*")))
+    print("Archivo seleccionado: {}".format(fileName))
+
+def getRefColsCoord(columns_string):
     columns_string = columns_string.replace(" ", "")
     vCols = []
     if len(columns_string) > 1:
@@ -30,6 +40,12 @@ def getRefCols(columns_string):
             vCols.append(column_index_from_string(v))
     else:
         vCols.append(column_index_from_string(columns_string))
+
+    print("Las columnas seleccionadas han sido:")
+    for col in vCols:
+        print(get_column_letter(col))
+
+    print("_____")
     
     return vCols
 
@@ -52,7 +68,6 @@ def getIndicesAffected(str_indices):
     return indicesSelected
 
 def removeWholeRows(row, matrixAffected):
-    print(matrixAffected)
     for cells in ws.iter_cols(
         min_col = matrixAffected[0],
         max_col = matrixAffected[2],
@@ -64,46 +79,95 @@ def removeWholeRows(row, matrixAffected):
 
 def getValues(refColumns, row_init, row_end):
     vRefValue = [[], []]
+    print("Obteniendo los elementos referentes...")
     for i in range(row_init, row_end + 1):
         vRefValue[1].append(i)
         str_aux = ""
+
         for j in refColumns:
             str_aux += str(ws[i][j - 1].value) + ", "
 
         vRefValue[0].append(str_aux)
+        print("{}%".format(int((100 * (i - row_init) / (row_end - row_init)))))
 
     return vRefValue
 
+def printPercentCompleted(row):
+    print("{}%".format(int((100 * (row - row_init) / (row_end - row_init)))))
+
 def removeNextsRepeated(vRefValue, cornerMatrix, refColumns):
+    global row_init
+    global row_end
+
+    row_init = cornerMatrix[1]
+    row_end = cornerMatrix[3]
     currentValue = None
-    i = 0
-    for ref in vRefValue[0]:
+
+    for i, ref in enumerate(vRefValue[0]):
         if currentValue != ref:
             currentValue = ref
-            print("Nuevo valor {}".format(currentValue))
+            print("Fila: {}, nueva cadena: \"{}\".".format(vRefValue[1][i], currentValue))
         else:
-            print("A borrar, se repitió el {}".format(currentValue))
+            print("Fila: {}, se repite la cadena.".format(vRefValue[1][i]))
             if allRow:
                 removeWholeRows(vRefValue[1][i], cornerMatrix)
             else:
                 for col in refColumns:
                     ws[vRefValue[1][i]][col - 1].value = None
-        i += 1
-        
+
+            printPercentCompleted(vRefValue[1][i])
+
 def removeUntilNextChange():
     global wb
     global ws
 
-    wb = load_workbook("prueba.xlsx")
-    ws = wb["Hoja 1"]
-    indices = getIndicesAffected("B4:H17")
-    refColumns = getRefCols("D")
+    work_sheet_string = "C Tpatterns"
+    #matrix_range_string = "J6730:U6771"
+    matrix_range_string = "J6730:U8169"
+    ref_columns_string = "O, T, U"
+
+    #work_sheet_string = e1.get()
+    #matrix_range_string = e2.get()
+    #ref_columns_string = e3.get()
+
+    selectFile()  # borrar esta llamada en GUI
+
+    print("Abriendo el archivo...")
+    wb = load_workbook(fileName)
+    print("Abriendo la hoja...")
+    ws = wb[work_sheet_string]
+    indices = getIndicesAffected(matrix_range_string)
+    refColumns = getRefColsCoord(ref_columns_string)
     valuesRef = getValues(refColumns, indices[1], indices[3])
 
     removeNextsRepeated(valuesRef, indices, refColumns)
 
-    wb.save("fin.xlsx")
+    print("Guardando...")
+    wb.save("mod.xlsx")
+    print("Terminé :)")
+
+#root = Tk()
+#root.title("Herramientas Excel")
+
+#root.geometry("500x500")
+#root.resizable(0, 0)
 
 allRow = True
+
+#Label(root, text = "Hoja del libro").grid(row = 0)
+#Label(root, text = "Seleccione la matriz\nEjemplo: D3:F5").grid(row = 1)
+#Label(root, text = "Columnas referentes\nSeparadas por ','").grid(row = 2)
+#Button(root, text = "Abrir archivo", command = selectFile).grid(row = 3, column = 0, sticky = W, pady = 4)
+#Button(root, text = "Aceptar", command = removeUntilNextChange).grid(row = 3, column = 1, sticky = W, pady = 4)
+#Button(root, text = "Salir", command = root.quit).grid(row = 3, column = 2, sticky = W, pady = 4)
+#Checkbutton(root, text = "Aplicar eliminación a toda la fila", variable = allRow, onvalue = TRUE, offvalue = FALSE).grid(row = 1, column = 2, sticky = W, pady = 4)
+
+#e1 = Entry(root)
+#e2 = Entry(root)
+#e3 = Entry(root)
+
+#E1.grid(row = 0, column = 1)
+#e2.grid(row = 1, column = 1)
+#e3.grid(row = 2, column = 1)
 
 removeUntilNextChange()
